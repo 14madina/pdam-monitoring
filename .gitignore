@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data — jangan commit data mentah dan hasil besar
+data/raw/
+data/interim/
+data/processed/
+
+# Laporan riset dan scratch (tidak dibutuhkan web hosting)
+reports/
+scratch/
+notebooks/
+outputs/
+
+# Models (Diikutsertakan karena ukuran sangat kecil < 3 MB dan wajib untuk inferensi web)
+# models/**/*.pkl
+# models/**/*.h5
+# models/**/*.keras
+# models/**/*.joblib
+
+# Outputs besar
+outputs/excel/*.xlsx
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local

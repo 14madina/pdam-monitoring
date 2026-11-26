@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pdam_postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: pdam_db
+      POSTGRES_USER: pdam_user
+      POSTGRES_PASSWORD: pdam_password_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init_postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pdam_user -d pdam_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dashboard:
+    build: .
+    container_name: pdam_dashboard_web
+    restart: always
+    ports:
+      - "8501:8501"
+    environment:
+      - DATABASE_URL=postgresql://pdam_user:pdam_password_2026@postgres:5432/pdam_db
+      - TF_ENABLE_ONEDNN_OPTS=0
+      - KERAS_HOME=/app/data/interim/.keras
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+      - ./reports:/app/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

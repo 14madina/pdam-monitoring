@@ -1,0 +1,7 @@
+{
+  "K": 4,
+  "scenario": "S0_ALL_FEATURES",
+  "n_features": 7,
+  "random_state": 42,
+  "scaler": "MinMaxScaler"
+}

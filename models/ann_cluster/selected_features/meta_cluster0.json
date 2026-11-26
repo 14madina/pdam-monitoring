@@ -1,0 +1,25 @@
+{
+  "scenario": "S1_SELECTED_FEATURES",
+  "model_name": "ann_global",
+  "cluster_id": 0,
+  "n_features": 3,
+  "random_state": 42,
+  "scaler": "StandardScaler",
+  "ann_config": {
+    "hidden_layers": [
+      128,
+      64,
+      32
+    ],
+    "activation": "relu",
+    "dropout_rate": 0.05,
+    "learning_rate": 0.005,
+    "batch_size": 4096,
+    "max_epochs": 100,
+    "use_early_stopping": false,
+    "early_stopping_patience": null,
+    "reduce_lr_patience": 5,
+    "optimizer": "adam",
+    "loss": "mse"
+  }
+}
