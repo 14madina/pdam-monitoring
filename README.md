@@ -1,7 +1,4 @@
-# PDAM Skripsi Project — Pemodelan Prediktif Segmentasi Pelanggan
 
-## Judul Penelitian
-**Pemodelan Prediktif Berbasis Segmentasi Pelanggan untuk Deteksi Lonjakan Pemakaian Air PDAM Menggunakan K-Means Clustering dan ANN Regression**
 
 ---
 
