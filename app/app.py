@@ -503,11 +503,9 @@ def render_login_screen():
                     else:
                         st.error("Nama pengguna atau kata sandi tidak valid.")
 
-            st.markdown("---")
             st.markdown("""
-            <div style='font-size: 0.8rem; color: #64748B;'>
-                <b>Kredensial Administrator:</b><br/>
-                • Username: <code>admin</code> | Password: <code>admin123</code> (Hak Akses Penuh Sistem)
+            <div style='text-align: center; font-size: 0.76rem; color: #94A3B8; margin-top: 14px;'>
+                🔒 Sistem Terenkripsi & Terintegrasi PDAM Tirta Perwira
             </div>
             """, unsafe_allow_html=True)
 
@@ -639,14 +637,31 @@ def render_next_step_guide(current_page_num: int):
 
 
 # =============================================================================
-# HELPER DATA LOADER DENGAN FILTER GLOBAL
+# HELPER DATA LOADER DENGAN FILTER GLOBAL (TEROPTIMASI MEMORY CACHING)
 # =============================================================================
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=300)
+def load_cached_rayons():
+    """Mengambil daftar rayon dengan caching memori agar query instan."""
+    return ["ALL"] + database.get_available_rayons()
+
+@st.cache_data(ttl=300)
+def load_cached_periods():
+    """Mengambil daftar periode dengan caching memori agar query instan."""
+    return ["ALL"] + database.get_available_periods()
+
+@st.cache_data(ttl=300)
 def load_cached_dashboard_data(rayon="ALL", periode="ALL"):
     return database.get_dashboard_data(
         rayon=None if rayon == "ALL" else rayon,
         periode=None if periode == "ALL" else periode,
     )
+
+@st.cache_data(show_spinner=False, ttl=300)
+def generate_optimized_map_html(df_records_json: str, color_mode: str) -> str:
+    """Cache rendering HTML peta leaflet agar navigasi instan tanpa render ulang berat."""
+    sub_df = pd.read_json(io.StringIO(df_records_json))
+    m = geo_map.build_pdam_interactive_map(sub_df, color_by=color_mode)
+    return m.get_root().render()
 
 
 # =============================================================================
@@ -662,10 +677,10 @@ if selected_menu == "Dashboard Utama":
     # Filter Bar
     f_col1, f_col2, f_col3 = st.columns([1.5, 1.5, 3])
     with f_col1:
-        rayons = ["ALL"] + database.get_available_rayons()
+        rayons = load_cached_rayons()
         selected_rayon = st.selectbox("Wilayah / Rayon", rayons, index=0)
     with f_col2:
-        periods = ["ALL"] + database.get_available_periods()
+        periods = load_cached_periods()
         selected_period = st.selectbox("Periode Tagihan", periods, index=0)
 
     df_dash = load_cached_dashboard_data(selected_rayon, selected_period)
@@ -945,10 +960,10 @@ elif selected_menu == "Data Pelanggan":
         # Filter bar
         col_f1, col_f2, col_f3, col_f4 = st.columns(4)
         with col_f1:
-            r_opts = ["ALL"] + database.get_available_rayons()
+            r_opts = load_cached_rayons()
             f_rayon = st.selectbox("Filter Rayon", r_opts, key="tab2_rayon")
         with col_f2:
-            p_opts = ["ALL"] + database.get_available_periods()
+            p_opts = load_cached_periods()
             f_period = st.selectbox("Filter Periode", p_opts, key="tab2_period")
         with col_f3:
             s_opts = ["ALL", "INDIKASI_LONJAKAN", "NORMAL", "ANOMALI_RENDAH"]
@@ -1298,7 +1313,7 @@ elif selected_menu == "Peta Sebaran Pelanggan":
         ]
         selected_scheme = st.selectbox("Skema Warna Marker", color_scheme_opt, index=0)
     with m_col5:
-        sample_limit = st.slider("Maksimal Titik", min_value=250, max_value=3000, value=1000, step=250)
+        sample_limit = st.slider("Maksimal Titik", min_value=100, max_value=2500, value=500, step=100, help="Jumlah titik ditampilkan pada peta. 500 titik direkomendasikan untuk performa tercepat dan mulus.")
 
     # Terapkan filter
     filtered_geo = valid_geo.copy()
@@ -1344,15 +1359,12 @@ elif selected_menu == "Peta Sebaran Pelanggan":
     if sample_geo.empty:
         st.warning("Tidak ditemukan data pelanggan dengan koordinat valid untuk kombinasi filter ini.")
     else:
-        # Bangun peta Folium interaktif multi-layer dengan sparkline popups
+        # Bangun peta Folium interaktif multi-layer dengan sparkline popups (Cached for high performance)
         color_by_mode = "spike_status" if selected_scheme.startswith("Status") else "cluster"
-        m = geo_map.build_pdam_interactive_map(
-            sample_geo,
-            color_by=color_by_mode,
-        )
+        geo_json_str = sample_geo.to_json(orient="records")
+        map_html = generate_optimized_map_html(geo_json_str, color_by_mode)
 
         # Render peta Leaflet secara mulus
-        map_html = m.get_root().render()
         components.html(map_html, height=660)
 
         st.caption("**Panduan Navigasi Peta:** Klik ikon layer di pojok kanan atas untuk berganti antara *Google Hybrid Satellite*, *OpenStreetMap*, *Esri Satellite*, atau *OpenTopoMap*. Klik setiap titik marker untuk melihat pop-up profil dan **grafik riwayat 12 periode konsumsi air** (Aktual vs Prediksi ANN vs Batas +30%). Titik yang berdekatan/sama telah didispersikan secara otomatis sehingga setiap pelanggan dapat diklik secara individual.")

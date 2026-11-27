@@ -39,6 +39,10 @@ if not logger.handlers:
 
 DB_PATH = config.DATA_DIR / "database" / "pdam_database.db"
 
+# Cache status inisialisasi dalam memori (Memory Flags) untuk optimasi kecepatan
+_DB_INITIALIZED: Dict[str, bool] = {}
+_DB_SEEDED: Dict[str, bool] = {}
+
 
 def get_db_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
     """Membuka koneksi ke SQLite database dengan timeout dan foreign keys."""
@@ -52,6 +56,11 @@ def get_db_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
 
 def init_database(db_path: Optional[Path] = None) -> None:
     """Inisialisasi tabel dan indeks database jika belum ada."""
+    target_path = Path(db_path) if db_path else DB_PATH
+    path_key = str(target_path.resolve())
+    if _DB_INITIALIZED.get(path_key, False):
+        return
+
     conn = get_db_connection(db_path)
     cur = conn.cursor()
 
@@ -157,9 +166,9 @@ def init_database(db_path: Optional[Path] = None) -> None:
     );
     """)
 
-    # Default Users: admin / admin123, petugas / pdam2026
+    # Default Administrator: Admin / PDAM-tirtaperwira12#
     default_users = [
-        ("admin", "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9", "Administrator PDAM", "admin", "ALL"),
+        ("Admin", "9d3de5856828828884f811edf2f44ca28a424dab645b8df5f9183caba46d96ba", "Administrator PDAM", "admin", "ALL"),
         ("petugas", "f34fbe9fd488ff8db237addaf068439963f4e276b24ab06b31dc4ef343a848b4", "Petugas Lapangan Utama", "petugas", "ALL"),
         ("petugas_purbalingga", "f34fbe9fd488ff8db237addaf068439963f4e276b24ab06b31dc4ef343a848b4", "Petugas Rayon Purbalingga", "petugas", "010001"),
         ("petugas_bukateja", "f34fbe9fd488ff8db237addaf068439963f4e276b24ab06b31dc4ef343a848b4", "Petugas Rayon Bukateja", "petugas", "020001"),
@@ -178,6 +187,7 @@ def init_database(db_path: Optional[Path] = None) -> None:
 
     conn.commit()
     conn.close()
+    _DB_INITIALIZED[path_key] = True
     logger.info("✅ Database initialized successfully: %s", str(db_path or DB_PATH))
 
 
@@ -565,7 +575,7 @@ def authenticate_user(
     cur.execute("""
     SELECT username, full_name, role, rayon
     FROM users
-    WHERE username = ? AND password_hash = ?
+    WHERE LOWER(username) = LOWER(?) AND password_hash = ?
     """, (username.strip(), pwd_hash))
     row = cur.fetchone()
     conn.close()
@@ -669,6 +679,11 @@ def seed_database_if_empty(db_path: Optional[Path] = None) -> int:
     Mengisi database SQLite secara otomatis dari artefak penelitian tersimpan
     jika tabel readings atau predictions_anomalies masih kosong.
     """
+    target_path = Path(db_path) if db_path else DB_PATH
+    path_key = str(target_path.resolve())
+    if _DB_SEEDED.get(path_key, False):
+        return 1
+
     init_database(db_path)
     conn = get_db_connection(db_path)
     cur = conn.cursor()
@@ -676,6 +691,7 @@ def seed_database_if_empty(db_path: Optional[Path] = None) -> int:
     count = cur.fetchone()[0]
     if count > 0:
         conn.close()
+        _DB_SEEDED[path_key] = True
         return count
 
     seed_pq = config.OUTPUT_MAPS / "streamlit_app_data.parquet"
