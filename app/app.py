@@ -657,9 +657,8 @@ def load_cached_dashboard_data(rayon="ALL", periode="ALL"):
     )
 
 @st.cache_data(show_spinner=False, ttl=300)
-def generate_optimized_map_html(df_records_json: str, color_mode: str) -> str:
-    """Cache rendering HTML peta leaflet agar navigasi instan tanpa render ulang berat."""
-    sub_df = pd.read_json(io.StringIO(df_records_json))
+def generate_optimized_map_html(sub_df: pd.DataFrame, color_mode: str) -> str:
+    """Cache rendering HTML peta leaflet agar navigasi instan tanpa merusak tipe data."""
     m = geo_map.build_pdam_interactive_map(sub_df, color_by=color_mode)
     return m.get_root().render()
 
@@ -1363,8 +1362,7 @@ elif selected_menu == "Peta Sebaran Pelanggan":
     else:
         # Bangun peta Folium interaktif multi-layer dengan sparkline popups (Cached for high performance)
         color_by_mode = "spike_status" if selected_scheme.startswith("Status") else "cluster"
-        geo_json_str = sample_geo.to_json(orient="records")
-        map_html = generate_optimized_map_html(geo_json_str, color_by_mode)
+        map_html = generate_optimized_map_html(sample_geo, color_by_mode)
 
         # Render peta Leaflet secara mulus
         components.html(map_html, height=660)
