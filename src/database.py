@@ -694,7 +694,9 @@ def seed_database_if_empty(db_path: Optional[Path] = None) -> int:
         _DB_SEEDED[path_key] = True
         return count
 
-    seed_pq = config.OUTPUT_MAPS / "streamlit_app_data.parquet"
+    seed_pq = config.BASE_DIR / "app" / "assets" / "streamlit_app_data.parquet"
+    if not seed_pq.exists():
+        seed_pq = config.OUTPUT_MAPS / "streamlit_app_data.parquet"
     if not seed_pq.exists():
         conn.close()
         return 0
@@ -863,7 +865,9 @@ def get_dashboard_data(
     conn.close()
 
     # Merge riwayat histori 12 periode konsumsi untuk sparkline peta jika tersedia
-    seed_pq = config.OUTPUT_MAPS / "streamlit_app_data.parquet"
+    seed_pq = config.BASE_DIR / "app" / "assets" / "streamlit_app_data.parquet"
+    if not seed_pq.exists():
+        seed_pq = config.OUTPUT_MAPS / "streamlit_app_data.parquet"
     if seed_pq.exists() and not df.empty:
         try:
             df_pq = pd.read_parquet(seed_pq)[["NoPEL", "history_usage_json", "history_periods_json", "keterangan"]]
