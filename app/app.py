@@ -733,7 +733,9 @@ if selected_menu == "Dashboard Utama":
 
             with tab_comp1:
                 # Menampilkan grafik Full Timeline hasil riset (N = 103,175)
-                p_full_timeline = config.REPORTS_DIR / "prediction" / "ann_full_timeline_actual_vs_predicted.png"
+                p_full_timeline = APP_DIR / "assets" / "ann_full_timeline_actual_vs_predicted.png"
+                if not p_full_timeline.exists():
+                    p_full_timeline = config.REPORTS_DIR / "prediction" / "ann_full_timeline_actual_vs_predicted.png"
                 if not p_full_timeline.exists():
                     p_full_timeline = config.PROJECT_ROOT / "outputs" / "prediction" / "ann_full_timeline_actual_vs_predicted.png"
 
